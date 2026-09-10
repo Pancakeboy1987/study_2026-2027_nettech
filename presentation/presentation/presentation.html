@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru-RU">
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="Коровкин Никита Михайлович">
+  <meta name="author" content="Кулябов Д. С.">
+  <title>Email injection</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link href="data:text/plain;charset=UTF-8;charset=utf-8,Not%20found%3A%20%2Freveal%2Ejs%404%2E6%2E1%2F%2Fdist%2Freset%2Ecss" rel="stylesheet">
+  <link href="data:text/plain;charset=UTF-8;charset=utf-8,Not%20found%3A%20%2Freveal%2Ejs%404%2E6%2E1%2F%2Fdist%2Freveal%2Ecss" rel="stylesheet">
+  <style>
+.reveal .sourceCode { 
+overflow: visible;
+}
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <link href="data:text/plain;charset=UTF-8;charset=utf-8,Not%20found%3A%20%2Freveal%2Ejs%404%2E6%2E1%2F%2Fdist%2Ftheme%2Fbeige%2Ecss" rel="stylesheet" id="theme">
+  
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide">
+  <h1 class="title">Email injection</h1>
+  <p class="subtitle">Уязвимость и защита</p>
+  <p class="author">Коровкин Никита Михайлович</p>
+  <p class="author">Кулябов Д. С.</p>
+  <p class="institute">Российский университет дружбы народов, Москва,
+Россия</p>
+</section>
+
+<section>
+<section id="информация" class="title-slide slide level1">
+<h1>Информация</h1>
+
+</section>
+<section id="докладчик" class="slide level2">
+<h2>Докладчик</h2>
+<div class="columns" data-align="center">
+<div class="column" style="width:70%;">
+<ul>
+<li>Коровкин Никита Михайлович</li>
+<li>Студент 2 курса</li>
+<li>Российский университет дружбы народов</li>
+<li><a href="mailto:1132246835@rudn.ru">1132246835@pfur.ru</a></li>
+</ul>
+</div><div class="column" style="width:30%;">
+
+</div>
+</div>
+</section></section>
+<section>
+<section id="вводная-часть" class="title-slide slide level1">
+<h1>Вводная часть</h1>
+
+</section>
+<section id="актуальность" class="slide level2">
+<h2>Актуальность</h2>
+<ul>
+<li>Повсеместное использование электронной почты</li>
+<li>Трансформация векторов атак</li>
+<li>Репутационные и инфраструктурные риски</li>
+<li>Недостатки автоматизации разработки</li>
+</ul>
+</section>
+<section id="объект-и-предмет-исследования" class="slide level2">
+<h2>Объект и предмет исследования</h2>
+<p>Объектом исследования является процесс программной обработки и
+валидации пользовательского ввода в веб-приложениях, взаимодействующих с
+почтовыми сервисами. Предметом исследования выступает уязвимость
+«инъекция E-mail», возникающая вследствие отсутствия фильтрации
+управляющих символов в протоколе SMTP.</p>
+</section>
+<section id="цели-и-задачи" class="slide level2">
+<h2>Цели и задачи</h2>
+<p>Целью работы является изучение механизмов эксплуатации уязвимости
+Email Injection и разработка практических рекомендаций по обеспечению
+безопасности почтовых сервисов. В задачи исследования входит анализ
+структуры MIME-сообщений, демонстрация векторов CRLF-инъекций и
+обоснование выбора надежных программных методов фильтрации
+пользовательского ввода.</p>
+</section>
+<section id="материалы-и-методы" class="slide level2">
+<h2>Материалы и методы</h2>
+<p>В качестве материалов исследования были использованы международные
+стандарты и спецификации протоколов передачи почты (RFC 5322, RFC 2822),
+рекомендации консорциума OWASP по защите веб-приложений, а также
+техническая документация современных программных библиотек для работы с
+SMTP (Python и Node.js).</p>
+<p>Основными методами работы послужили теоретический анализ механизмов
+обработки CRLF-последовательностей, метод сравнительного анализа
+уязвимых и защищенных фрагментов программного кода, а также
+моделирование сценариев эксплуатации инъекций для оценки рисков
+информационной безопасности.</p>
+</section>
+<section id="введение" class="slide level2">
+<h2>Введение</h2>
+<ul>
+<li><p>Определение: Уязвимость, при которой невалидированные данные
+пользователя используются сервером для формирования почтовых
+сообщений.</p></li>
+<li><p>Где встречается: Формы обратной связи, подписки на рассылки,
+запросы на сброс пароля.</p></li>
+<li><p>Цель атакующего: Модификация структуры письма, добавление скрытых
+получателей или подмена контента.</p></li>
+</ul>
+</section>
+<section id="техническая-основа-smtp-и-crlf" class="slide level2">
+<h2>Техническая основа (SMTP и CRLF)</h2>
+<ul>
+<li><p>Структура письма: Состоит из заголовков (To, From, Subject) и
+тела сообщения, разделенных пустой строкой.</p></li>
+<li><p>Разделитель CRLF: Ключевой элемент синтаксиса SMTP -
+символы</p></li>
+</ul>
+<pre><code>&quot;\r \n</code></pre>
+<p>” (Carriage Return + Line Feed).</p>
+<ul>
+<li>Суть уязвимости: Если приложение не фильтрует</li>
+</ul>
+<pre><code>&quot;\r \n&quot;</code></pre>
+<p>, злоумышленник может внедрить эти символы и заставить сервер
+интерпретировать последующий текст как новые заголовки.</p>
+</section>
+<section id="механизм-и-векторы-атаки" class="slide level2">
+<h2>Механизм и векторы атаки</h2>
+<p>BCC Injection (Скрытая копия)</p>
+<pre><code>Ввод: &quot;user@example.com\r\nBcc: spam-target@mail.com&quot;</code></pre>
+<p>Результат: Использование доверенного сервера для массовой рассылки
+спама. Body Injection (Инъекция в тело)</p>
+<pre><code>Ввод &quot;Subject\r\n\r\n - Фишинговое сообщение&quot;</code></pre>
+<p>Результат - Двойной перенос строки завершает блок заголовков и
+позволяет полностью подменить текст письма.</p>
+</section>
+<section id="примеры-реализации-уязвимый-код" class="slide level2">
+<h2>Примеры реализации (Уязвимый код)</h2>
+<pre><code>Прямая вставка ввода в строку заголовков - опасна
+headers = f&quot;From: {user_email}\r\nTo: {admin}\r \n\r \n&quot;
+full_message = headers + user_message
+ Любой \r \n в user_email создаст новый заголовок</code></pre>
+</section>
+<section id="примеры-реализации-безопасный-код" class="slide level2">
+<h2>Примеры реализации (Безопасный код)</h2>
+<p>Прямая вставка ввода в строку заголовков - опасна</p>
+<pre><code>async function sendFeedback(userEmail: string, userMessage: string) {
+let transporter = nodemailer.createTransport({ /* config */ });
+// БЕЗОПАСНО: Библиотека сама экранирует спецсимволы в полях &#39;from&#39;, &#39;to&#39;, &#39;s
+let info = await transporter.sendMail({
+    from: userEmail, // Защищено nodemailer от CRLF
+    to: &quot;admin@mysite.com&quot;,
+    subject: &quot;New Feedback&quot;,
+    text: userMessage,
+});</code></pre>
+</section>
+<section id="последствия-эксплуатации" class="slide level2">
+<h2>Последствия эксплуатации</h2>
+<ul>
+<li><p>Blacklisting - Попадание IP-адреса или домена в глобальные черные
+списки (Spamhaus, SURBL). Легитимная почта перестанет доходить до
+адресатов.</p></li>
+<li><p>Потеря репутации: Рассылка вредоносного контента от имени
+официального домена компании.</p></li>
+<li><p>Information Disclosure - Перехват конфиденциальных ответов через
+инъекцию заголовка Reply-To.</p></li>
+</ul>
+</section>
+<section id="методы-защиты" class="slide level2">
+<h2>Методы защиты</h2>
+<ul>
+<li><p>Использование современных API - Отказ от ручной сборки
+MIME-сообщений в пользу встроенных классов (Nodemailer,
+EmailMessage).</p></li>
+<li><p>Валидация (Whitelisting) - Проверка email-адресов строгими
+регулярными выражениями (запрет пробелов и управляющих
+символов).</p></li>
+<li><p>Использование фиксированного системного адреса для отправки, а
+данных пользователя — только в поле Reply-To.</p></li>
+</ul>
+</section>
+<section id="результаты" class="slide level2">
+<h2>Результаты</h2>
+<p>В ходе работы подтверждено, что отсутствие строгой фильтрации
+управляющих символов в веб-формах позволяет злоумышленнику полностью
+перехватить контроль над структурой SMTP-пакета. Это превращает
+стандартную функцию обратной связи в инструмент для несанкционированных
+действий.</p>
+<p>Разработанные рекомендации и разобранные примеры кода могут быть
+использованы программистами и специалистами по информационной
+безопасности для проведения аудита существующих веб-приложений и
+проектирования защищенных систем уведомлений.</p>
+</section></section>
+    </div>
+  </div>
+
+  <script src="data:text/plain;charset=UTF-8;charset=utf-8,Not%20found%3A%20%2Freveal%2Ejs%404%2E6%2E1%2F%2Fdist%2Freveal%2Ejs"></script>
+
+  <!-- reveal.js plugins -->
+  <script src="data:text/plain;charset=UTF-8;charset=utf-8,Not%20found%3A%20%2Freveal%2Ejs%404%2E6%2E1%2F%2Fplugin%2Fnotes%2Fnotes%2Ejs"></script>
+  <script src="data:text/plain;charset=UTF-8;charset=utf-8,Not%20found%3A%20%2Freveal%2Ejs%404%2E6%2E1%2F%2Fplugin%2Fsearch%2Fsearch%2Ejs"></script>
+  <script src="data:text/plain;charset=UTF-8;charset=utf-8,Not%20found%3A%20%2Freveal%2Ejs%404%2E6%2E1%2F%2Fplugin%2Fzoom%2Fzoom%2Ejs"></script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+        // Display controls in the bottom right corner
+        controls: true,
+
+        // Help the user learn the controls by providing hints, for example by
+        // bouncing the down arrow when they first encounter a vertical slide
+        controlsTutorial: true,
+
+        // Determines where controls appear, "edges" or "bottom-right"
+        controlsLayout: 'bottom-right',
+
+        // Visibility rule for backwards navigation arrows; "faded", "hidden"
+        // or "visible"
+        controlsBackArrows: 'faded',
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Display the page number of the current slide
+        slideNumber: false,
+
+        // 'all', 'print', or 'speaker'
+        showSlideNumber: 'all',
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Start with 1 for the hash rather than 0
+        hashOneBasedIndex: false,
+
+        // Flags if we should monitor the hash and change slides accordingly
+        respondToHashChanges: true,
+
+        // Push each slide change to the browser history
+        history: false,
+
+        // Enable keyboard shortcuts for navigation
+        keyboard: true,
+
+        // Enable the slide overview mode
+        overview: true,
+
+        // Disables the default reveal.js slide layout (scaling and centering)
+        // so that you can use custom CSS layout
+        disableLayout: false,
+
+        // Vertical centering of slides
+        center: true,
+
+        // Enables touch navigation on devices with touch input
+        touch: true,
+
+        // Loop the presentation
+        loop: false,
+
+        // Change the presentation direction to be RTL
+        rtl: false,
+
+        // see https://revealjs.com/vertical-slides/#navigation-mode
+        navigationMode: 'default',
+
+        // Randomizes the order of slides each time the presentation loads
+        shuffle: false,
+
+        // Turns fragments on and off globally
+        fragments: true,
+
+        // Flags whether to include the current fragment in the URL,
+        // so that reloading brings you to the same fragment position
+        fragmentInURL: true,
+
+        // Flags if the presentation is running in an embedded mode,
+        // i.e. contained within a limited portion of the screen
+        embedded: false,
+
+        // Flags if we should show a help overlay when the questionmark
+        // key is pressed
+        help: true,
+
+        // Flags if it should be possible to pause the presentation (blackout)
+        pause: true,
+
+        // Flags if speaker notes should be visible to all viewers
+        showNotes: false,
+
+        // Global override for autoplaying embedded media (null/true/false)
+        autoPlayMedia: null,
+
+        // Global override for preloading lazy-loaded iframes (null/true/false)
+        preloadIframes: null,
+
+        // Number of milliseconds between automatically proceeding to the
+        // next slide, disabled when set to 0, this value can be overwritten
+        // by using a data-autoslide attribute on your slides
+        autoSlide: 0,
+
+        // Stop auto-sliding after user input
+        autoSlideStoppable: true,
+
+        // Use this method for navigation when auto-sliding
+        autoSlideMethod: null,
+
+        // Specify the average time in seconds that you think you will spend
+        // presenting each slide. This is used to show a pacing timer in the
+        // speaker view
+        defaultTiming: null,
+
+        // Enable slide navigation via mouse wheel
+        mouseWheel: false,
+
+        // The display mode that will be used to show slides
+        display: 'block',
+
+        // Hide cursor if inactive
+        hideInactiveCursor: true,
+
+        // Time before the cursor is hidden (in ms)
+        hideCursorTime: 5000,
+
+        // Opens links in an iframe preview overlay
+        previewLinks: false,
+
+        // Transition style (none/fade/slide/convex/concave/zoom)
+        transition: 'slide',
+
+        // Transition speed (default/fast/slow)
+        transitionSpeed: 'default',
+
+        // Transition style for full page slide backgrounds
+        // (none/fade/slide/convex/concave/zoom)
+        backgroundTransition: 'fade',
+
+        // Number of slides away from the current that are visible
+        viewDistance: 3,
+
+        // Number of slides away from the current that are visible on mobile
+        // devices. It is advisable to set this to a lower number than
+        // viewDistance in order to save resources.
+        mobileViewDistance: 2,
+
+        // reveal.js plugins
+        plugins: [
+          RevealNotes,
+          RevealSearch,
+          RevealZoom
+        ]
+      });
+    </script>
+    </body>
+</html>
